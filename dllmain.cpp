@@ -1,4 +1,4 @@
-﻿#include <windows.h>
+#include <windows.h>
 #include <io.h>
 #include <fcntl.h>
 #include <iostream>
@@ -77,11 +77,10 @@ HRESULT WINAPI endscene_hooked(LPDIRECT3DDEVICE9 device)
 {
     INIT(menu::initImGui(globals_t.hGame, device))
 
-        if (globals_t.bIsMenuOpen) {
-            menu::draw();
-            ImGui::GetIO().MouseDrawCursor;
-            //SetCursorPos(0, 0);
-        }
+    if (globals_t.bIsMenuOpen) {
+        menu::draw();
+        ImGui::GetIO().MouseDrawCursor = true;
+    }
 
     return pEndScene(device);
 }
@@ -108,7 +107,7 @@ HRESULT WINAPI wndproc_hooked(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 BOOL WINAPI setcursorpos_hooked(int x, int y)
 {
     if (globals_t.bIsMenuOpen)
-        return TRUE;
+        return FALSE;
 
     return pSetCursorPos(x, y);
 }
@@ -128,8 +127,6 @@ void setup(void)
         FreeLibraryAndExitThread(globals_t.hmModule, 1);
     }
 
-    static int attempt = 0;
-
     D3DPRESENT_PARAMETERS d3dpp;
     d3dpp.hDeviceWindow = globals_t.hGame;
     d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
@@ -137,16 +134,10 @@ void setup(void)
 
     LPDIRECT3DDEVICE9 Device;
     if (FAILED(pD3D->CreateDevice(0, D3DDEVTYPE_HAL, d3dpp.hDeviceWindow, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dpp, &Device)))
-    {
-        attempt++;
-        if (attempt == 1)
-        {
-            d3dpp.Windowed = !d3dpp.Windowed;
-            std::cout << "failed to create device #1\n";
-            if (FAILED(pD3D->CreateDevice(0, D3DDEVTYPE_HAL, d3dpp.hDeviceWindow, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dpp, &Device)))
-                attempt++;
-        }
-        else if (attempt > 1)
+    {      
+        std::cout << "failed to create device #1\n";
+        d3dpp.Windowed = !d3dpp.Windowed;
+        if (FAILED(pD3D->CreateDevice(0, D3DDEVTYPE_HAL, d3dpp.hDeviceWindow, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dpp, &Device)))
         {
             std::cout << "failed to create device #2\n";
             pD3D->Release();
@@ -161,9 +152,9 @@ void setup(void)
 
     pEndScene = reinterpret_cast<fEndScene>(DetourFunction(reinterpret_cast<PBYTE>(pVTable[42]), reinterpret_cast<PBYTE>(endscene_hooked)));
 
-    pSetCursorPos = reinterpret_cast<fSetCursorPos>(DetourFunction(reinterpret_cast<PBYTE>(SetCursorPos), reinterpret_cast<PBYTE>(&setcursorpos_hooked)));
-
     globals_t.wndproc_o = reinterpret_cast<WNDPROC>(SetWindowLong(globals_t.hGame, GWL_WNDPROC, reinterpret_cast<LONG_PTR>(&wndproc_hooked)));
+
+    pSetCursorPos = reinterpret_cast<fSetCursorPos>(DetourFunction(reinterpret_cast<PBYTE>(SetCursorPos), reinterpret_cast<PBYTE>(&setcursorpos_hooked)));
 
     globals_t.bIsMenuOpen = true;
 }
