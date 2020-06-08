@@ -107,7 +107,7 @@ HRESULT WINAPI wndproc_hooked(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 BOOL WINAPI setcursorpos_hooked(int x, int y)
 {
     if (globals_t.bIsMenuOpen)
-        return FALSE;
+        return TRUE;
 
     return pSetCursorPos(x, y);
 }
