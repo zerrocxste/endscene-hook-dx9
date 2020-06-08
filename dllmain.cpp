@@ -156,6 +156,8 @@ void setup(void)
 
     pSetCursorPos = reinterpret_cast<fSetCursorPos>(DetourFunction(reinterpret_cast<PBYTE>(SetCursorPos), reinterpret_cast<PBYTE>(&setcursorpos_hooked)));
 
+    Sleep(100);
+    
     globals_t.bIsMenuOpen = true;
 }
 
